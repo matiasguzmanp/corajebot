@@ -1,8 +1,0 @@
-prefix=/home/robotica/famous_ws/install
-
-Name: corajebot_gazebo
-Description: Description of corajebot_gazebo
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
