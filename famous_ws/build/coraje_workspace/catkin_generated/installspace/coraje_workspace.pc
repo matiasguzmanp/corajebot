@@ -1,0 +1,8 @@
+prefix=/home/robotica/famous_ws/install
+
+Name: coraje_workspace
+Description: Description of coraje_workspace
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
