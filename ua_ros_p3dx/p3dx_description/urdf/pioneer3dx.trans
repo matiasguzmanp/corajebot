@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<robot name="pioneer3dx" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+<transmission name="base_link_right_wheel_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="base_right_wheel_joint">
+    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="right_wheel_motor">
+    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>7</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="base_link_left_wheel_trans">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="base_left_wheel_joint">
+    <hardwareInterface>VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="left_wheel_motor">
+    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>7</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<!-- <transmission name="caster_wheel_joint_tran">
+  <type>transmission_interface/</type>
+  <joint name="caster_wheel_joint">
+    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="caster_wheel_joint_actr">
+    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<transmission name="caster_holder_joint_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="caster_holder_joint">
+    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="caster_holder_joint_actr">
+    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission> -->
+
+</robot>
