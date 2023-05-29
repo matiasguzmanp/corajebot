@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Arguments -->
+    <arg name="move_forward_only" default="true"/>
+    <arg name="map_name"          default="lab"/>
+
+  	<!-- Map Server -->
+    <!-- <node pkg="map_server" type="map_server" name="map_server_2"
+		respawn="true" args="$(find corajebot_maps)/maps/$(arg map_name).yaml"/> -->
+    <!-- Localization -->
+    <include file="$(find corajebot_slam)/launch/localization/localization.launch">
+        <arg name="map_file" value="$(arg map_name)"/>
+    </include>
+    
+    <!-- move_base -->
+    <include file="$(find corajebot_slam)/launch/navigation/move_base.launch">
+        <arg name="move_forward_only" value="$(arg move_forward_only)"/>
+    </include>
+</launch>

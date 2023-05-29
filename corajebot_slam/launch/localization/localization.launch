@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="map_file"   default="lab"/>
+    <arg name="scan_topic" default="/p3dx/laser/scan" />
+    
+    <!-- static map server -->
+    <node name="map_server" pkg="map_server" type="map_server" 
+    args="$(find corajebot_maps)/maps/$(arg map_file).yaml" />
+
+    <!-- amcl -->
+    <node pkg="amcl" type="amcl" name="amcl" respawn="true" output="screen">
+        <remap from="/scan" to="$(arg scan_topic)"/>
+        <remap from="map" to="/map"/>
+        <rosparam file="$(find corajebot_slam)/params/localization/amcl.yaml" command="load"/>
+    </node>
+</launch>
