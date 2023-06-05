@@ -15,4 +15,8 @@
 		<arg name="headless"     value="$(arg headless)" />
         <arg name="worldname"   value="$(find corajebot_gazebo)/worlds/$(arg worldname).world"/>    
     </include>
+
+	<include file="$(find corajebot_slam)/launch/navigation/navigation.launch"/>
+
+	
 </launch>

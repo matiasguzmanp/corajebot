@@ -10,11 +10,13 @@ project(corajebot_slam)
 find_package(catkin REQUIRED COMPONENTS
   amcl
   dwa_local_planner
+  global_planner
   gmapping
   move_base
   roscpp
   rospy
   std_msgs
+  costmap_2d
 )
 
 ## System dependencies are found with CMake's conventions
