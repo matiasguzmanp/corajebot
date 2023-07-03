@@ -8,6 +8,6 @@ Una vez instalado, correr el siguiente comando
 Dentro de la carpeta src del workspace, ejecutar los siguientes comandos.
 
     $ git clone https://github.com/koide3/gazebo_apriltag
-    $ cp -R gazebo_apriltag/models/* ~/.gazebo/models/
+    $ cp -R src/gazebo_apriltag/models/* src/corajebot/corajebot_gazebo/models/
 
 Si la carpeta ~/.gazebo/models/ no existe, crearla con mkdir.
