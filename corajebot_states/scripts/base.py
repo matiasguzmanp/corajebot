@@ -4,22 +4,22 @@ import actionlib
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Quaternion, Twist
+from geometry_msgs.msg import Quaternion, Twist, PoseWithCovarianceStamped
 
-from tf.transformations import quaternion_from_euler
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 
 import numpy as np
 
 class MoveBase(object):
     def __init__(self):
         self._target_pose = self
-        self._robot_pose  = None
+        self._robot_pose  = self
         self._mba_client  = None
 
-        self.odom_topic = '/p3dx/odom'
+        self.odom_topic = '/amcl_pose'
         self.cmd_vel_topic = '/p3dx/cmd_vel'
         
-        self._odom_sub    = None
+        self._odom_sub    = rospy.Subscriber(self.odom_topic, PoseWithCovarianceStamped, self.odom_cb)
         self._cmd_vel_pub = None
 
         rospy.sleep(.5)
@@ -44,7 +44,9 @@ class MoveBase(object):
         return True
     
     def odom_cb(self, msg):
-        pass
+        self._robot_pose.x = msg.pose.pose.position.x
+        self._robot_pose.y = msg.pose.pose.position.y
+        self._robot_pose.theta = self._yaw_from_quat(msg.pose.pose.orientation)
 
     def set_target(self, x, y, theta):
         self._target_pose.x = x
@@ -65,8 +67,11 @@ class MoveBase(object):
         except rospy.ROSInterruptException:
             rospy.loginfo("Navigation test finished.")
 
-    def rotate(self):
-        pass
+    def rotate(self, theta):
+        x = self._robot_pose.x
+        y = self._robot_pose.y
+        self.set_target(x, y, theta)
+        self.go()
 
     def _call_mba_client(self):
         goal = MoveBaseGoal()
@@ -91,8 +96,13 @@ class MoveBase(object):
         q = quaternion_from_euler(0, 0, self._target_pose.theta/180.0*np.pi, 'rxyz')
         return Quaternion(q[0], q[1], q[2], q[3])
 
+    def _yaw_from_quat(self, q):
+        return euler_from_quaternion([q.x, q.y, q.z, q.w])[2]
+
 if __name__ == "__main__":
     rospy.init_node('move_base_client_test')
     mb = MoveBase()
-    mb.set_target(0, 0, 0)
+    mb.set_target(1, 5, 0)
     mb.go()
+    mb.rotate(90)
+    mb.rotate(0)
