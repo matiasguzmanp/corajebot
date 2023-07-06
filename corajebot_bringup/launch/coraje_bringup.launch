@@ -6,8 +6,6 @@
 	<arg name="headless"     default="false" />
 	<arg name="debug"        default="false" />
     <arg name="worldname"    default="lab"/>
-	<arg name="sdf_model_file" default="$(find corajebot_gazebo)/models/Apriltag36_11_00000/model.sdf" />
-	<arg name="apriltag_name" default="apriltag" />
 
     <include file="$(find p3dx_gazebo)/launch/gazebo.launch" >
 		<arg name="debug"        value="$(arg debug)" />
@@ -15,7 +13,7 @@
 		<arg name="paused"       value="$(arg paused)" />
 		<arg name="use_sim_time" value="$(arg use_sim_time)" />
 		<arg name="headless"     value="$(arg headless)" />
-        <arg name="worldname"   value="$(find corajebot_gazebo)/worlds/$(arg worldname).world"/>    
+        <arg name="worldname"   value="$(find corajebot_gazebo)/worlds/$(arg worldname).world"/>  
     </include>
 
 	<include file="$(find corajebot_slam)/launch/navigation/navigation.launch"/>
@@ -29,6 +27,4 @@
 		<param name="image_input_format" value="5" />
   	</node>
 
-	<node name="apriltag_model" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-	args="-file $(arg sdf_model_file) -sdf -x 1 -y 1 -z 1 -R 0 -P 0 -Y 0 -model $(arg apriltag_name)" />
 </launch>

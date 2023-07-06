@@ -8,6 +8,16 @@
 	<arg name="headless" default="false" />
 	<arg name="debug" default="false" />
 	<arg name="worldname" default="$(find p3dx_gazebo)/worlds/p3dx.world"/>
+
+	<!-- Args for apritlag spawn-->
+	<arg name="sdf_model_file" default="$(find corajebot_gazebo)/models/Apriltag36_11_00000/model.sdf" />
+	<arg name="apriltag_name" default="apriltag" />
+	<arg name="x" default="1.0" />
+	<arg name="y" default="1.0" />
+	<arg name="z" default="0.3" />
+	<arg name="R" default="0.0" />
+	<arg name="P" default="0.0" />
+	<arg name="Y" default="0.0" />
 	
 
 	<!-- We resume the logic in empty_world.launch, changing only the name of 
@@ -28,7 +38,11 @@
 	<!-- Run a python script to the send a service call to gazebo_ros to spawn 
 		a URDF robot -->
 	<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
+
 		respawn="false" output="screen" args="-urdf -model p3dx -param robot_description" />
+	<!-- Apriltag spawn-->			  
+  	<node name="apriltag_model" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+	args="-file $(arg sdf_model_file) -sdf -x $(arg x) -y $(arg y) -z $(arg z) -R $(arg R) -P $(arg P) -Y $(arg Y) -model $(arg apriltag_name)" />
 
 	<!-- ros_control p3rd launch file -->
 	<include file="$(find p3dx_control)/launch/control.launch" />
