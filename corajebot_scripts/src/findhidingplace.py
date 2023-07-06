@@ -17,7 +17,6 @@ import math
 import yaml
 from scipy.signal import convolve2d
 
-# Uses the shadow cast algorithm
 def mark_visible_cells(grid, pos_observer, visibility_range, mark_value=1):
     y_obs, x_obs = pos_observer
 
@@ -107,25 +106,6 @@ def createRobotFootprint(resolution=0.02):
     return robot_footprint
 
 
-def find_hiding_place(map, paparazzi, robot, display=True):
-    t0 = time()
-    possible_hiding_points_raw = mark_visible_cells(map.copy(), paparazzi, 300)
-    print(f'Exec time: {time()-t0}')
-
-    kernel = np.ones((3, 3), np.uint8)
-    possible_hiding_points = cv.erode(possible_hiding_points_raw, kernel)
-    
-    valid_points_map = whereCanRobotFit(possible_hiding_points, robot)
-    distances_from_point = calculateDistances(valid_points_map, (200,200))
-    max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
-
-    if display:
-        plt.imshow(map, cmap='gray')
-        plt.scatter(paparazzi[0], paparazzi[1])
-
-    return max_indices
-
-
 def point_to_original_size(xy_hidingplace):
     original_i = xy_hidingplace[0]*2
     original_j = xy_hidingplace[1]*2
@@ -141,15 +121,24 @@ def map_to_orig (map, orig_size, scale_percent = 200):
     final = cv.resize(map, dim, interpolation = cv.INTER_AREA)
 
     return final
-   
-def main():
-   
-    raw_map = cv.imread('stage_real.pgm', cv.IMREAD_GRAYSCALE)
-    img = raw_map.copy()
-    createRobotFootprint()
+    
+def find_hiding_place(map,resolution, origin, paparazzi:tuple, robot:tuple, display=True, range = 300):
+    t0 = time()
+    possible_hiding_points_raw = mark_visible_cells(map.copy(), paparazzi, range)
+    print('Exec time: %f'%(time()-t0))
 
-    paparazzi = (100, 125)
-    
-    
+    kernel = np.ones((3, 3), np.uint8)
+    possible_hiding_points = cv.erode(possible_hiding_points_raw, kernel)
+    robot_footprint = createRobotFootprint(resolution)
+    valid_points_map = whereCanRobotFit(possible_hiding_points, robot_footprint)
+    distances_from_point = calculateDistances(valid_points_map, robot) #calculate distances from robot, so we find the closest one
+    max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
+
+    if display:
+        plt.imshow(map, cmap='gray')
+        plt.scatter(paparazzi[0], paparazzi[1])
+
+    return max_indices
+
 if __name__=="__main__":
-   print("This is a library!")
+   print("This is a library! Try to import functions")
