@@ -18,20 +18,20 @@ import yaml
 from scipy.signal import convolve2d
 
 # Uses the shadow cast algorithm
-def mark_visible_cells(grid, observer, visibility_range, mark_value=1):
-    y_obs, x_obs = observer
-    num_rows = len(grid)
-    num_cols = len(grid[0])
-    for x in range(num_rows):
-        for y in range(num_cols):
+def mark_visible_cells(grid, pos_observer, visibility_range, mark_value=1):
+    y_obs, x_obs = pos_observer
+
+    for x in range(len(grid)):
+        for y in range(len(grid[0])):
             if grid[x][y] != 0:  # Skip occupied cells
                 dx = x - x_obs
                 dy = y - y_obs
                 distance = math.sqrt(dx**2 + dy**2)
                 if distance <= visibility_range:
-                    is_visible = is_clear_line_of_sight(grid, observer, (x, y))
+                    is_visible = is_clear_line_of_sight(grid, pos_observer, (x, y))
                     if is_visible:
                         grid[x][y] = mark_value
+
     kernel = np.ones((2,2), np.uint8)
     grid = cv.erode(grid, kernel)
     return grid
@@ -59,8 +59,7 @@ def whereCanRobotFit(map, robot):
   filtered_img = convolve2d(map, robot, mode='same', boundary='fill', fillvalue=0)
   normalized_array = cv.normalize(filtered_img, None, 0, 255, cv.NORM_MINMAX)
   _, fit = cv.threshold(normalized_array, 250, 255, cv.THRESH_BINARY)
-
-
+  
   return fit
 
 def manhattan_distance(point1, point2):
@@ -78,22 +77,25 @@ def calculateDistances(map, point):
         L[i,j] = 1/dist
   return L
 
-def process_map(map):
-    scale_percent = 100 # percent of original size
-    width = int(img.shape[1] * scale_percent / 100)
-    height = int(img.shape[0] * scale_percent / 100)
+def process_map(map, scale_percent = 50, display = 0):
+    # resize map
+    width = int(map.shape[1] * scale_percent / 100)
+    height = int(map.shape[0] * scale_percent / 100)
     dim = (width, height)
 
-    # resize image
-    resized = cv.resize(img, dim, interpolation = cv.INTER_AREA)
-    #min_x, max_x, min_y, max_y = [80, 270, 60, 200]
-    min_x, max_x, min_y, max_y = [150, 550, 100, 400]
+    resized = cv.resize(map, dim, interpolation = cv.INTER_AREA)
+
+    # cut map
+    min_x, max_x, min_y, max_y = [80, 270, 60, 200]
+    #min_x, max_x, min_y, max_y = [150, 550, 100, 400]
     cut_map = resized[min_x : max_x, min_y : max_y]
+
     _, occupancy_data = cv.threshold(cut_map, 250, 255,cv.THRESH_BINARY)
     kernel = np.ones((3,3), np.uint8)
     occupancy_data = cv.erode(occupancy_data, kernel)
-    
-    pass
+    if display:
+        plt.imshow(occupancy_data, cmap='gray')
+    return occupancy_data
 
 def createRobotFootprint(resolution=0.02):
     # digamos que el robot se puede aproximar por un circulo con r=50 cm
@@ -104,17 +106,12 @@ def createRobotFootprint(resolution=0.02):
     robot_footprint= cv.circle(robot_footprint, center, int(robot_footprint.shape[0]/2), 255, -1)
     return robot_footprint
 
-raw_map = cv.imread('stage_real.pgm', cv.IMREAD_GRAYSCALE)
-img = raw_map.copy()
 
-paparazzi = (50, 50)
-
-def find_hiding_place(map, paparazzi, robot):
+def find_hiding_place(map, paparazzi, robot, display=True):
     t0 = time()
     possible_hiding_points_raw = mark_visible_cells(map.copy(), paparazzi, 300)
     print(f'Exec time: {time()-t0}')
 
-    x,y = paparazzi
     kernel = np.ones((3, 3), np.uint8)
     possible_hiding_points = cv.erode(possible_hiding_points_raw, kernel)
     
@@ -122,10 +119,37 @@ def find_hiding_place(map, paparazzi, robot):
     distances_from_point = calculateDistances(valid_points_map, (200,200))
     max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
 
-    actual_indices = 
+    if display:
+        plt.imshow(map, cmap='gray')
+        plt.scatter(paparazzi[0], paparazzi[1])
 
     return max_indices
 
 
+def point_to_original_size(xy_hidingplace):
+    original_i = xy_hidingplace[0]*2
+    original_j = xy_hidingplace[1]*2
+
+    return original_i, original_j
+
+def map_to_orig (map, orig_size, scale_percent = 200):
+    width = int(orig_size[1] * scale_percent / 100)
+    height = int(orig_size[0] * scale_percent / 100)
+    dim = (width, height)
+
+    # resize image
+    final = cv.resize(map, dim, interpolation = cv.INTER_AREA)
+
+    return final
+   
+def main():
+   
+    raw_map = cv.imread('stage_real.pgm', cv.IMREAD_GRAYSCALE)
+    img = raw_map.copy()
+    createRobotFootprint()
+
+    paparazzi = (100, 125)
+    
+    
 if __name__=="__main__":
    print("This is a library!")
