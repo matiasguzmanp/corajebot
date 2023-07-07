@@ -116,10 +116,7 @@ class FindPlaceToHide:
 
         self.fit = fit
         return fit
-def find_hiding_place(map, resolution, origin, paparazzi, robot, display=True, range = 300):
-    t0 = time()
-    possible_hiding_points_raw = mark_visible_cells(map.copy(), paparazzi, range)
-    print('Exec time: %f'%(time()-t0))
+
 
     def point_to_original_size(self, xy_hidingplace):
         original_i = xy_hidingplace[0]/(self.scale_percent*0.01)
@@ -145,8 +142,8 @@ def find_hiding_place(map, resolution, origin, paparazzi, robot, display=True, r
         self.robot_scaled = robot
         return paparazzi, robot
 
-    def find_hiding_place(self, paparazzi, robot, display=False, range = 300):
-        paparazzi, robot = self.process_points(paparazzi, robot)
+    def find_hiding_place(self, paparazzi_orig, robot_orig, display=False, range = 300):
+        paparazzi, robot = self.process_points(paparazzi_orig, robot_orig)
         t0 = time()
         posible_hiding_points_raw = mark_visible_cells(self.scaled_map, paparazzi, range)
         print('Exec time: %f'%(time()-t0))
@@ -159,12 +156,13 @@ def find_hiding_place(map, resolution, origin, paparazzi, robot, display=True, r
         self.L = distances_from_point
         max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
         self.max_indices = max_indices
-        if display:
-            plt.imshow(map, cmap='gray')
-            plt.scatter(paparazzi[0], paparazzi[1])
 
         px, py = self.point_to_original_size(max_indices)
         x,y = self.origin[0] + px*self.resolution, self.origin[1] + py*self.resolution
+
+        if display:
+            plt.imshow(self.original_map, cmap='gray')
+            plt.scatter(paparazzi_orig[0], paparazzi_orig[1])
 
         return (py,px),(y,x)
 
