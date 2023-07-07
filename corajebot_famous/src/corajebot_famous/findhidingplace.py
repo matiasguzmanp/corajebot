@@ -122,7 +122,7 @@ def map_to_orig (map, orig_size, scale_percent = 200):
 
     return final
     
-def find_hiding_place(map, resolution, origin, paparazzi:tuple, robot:tuple, display=True, range = 300):
+def find_hiding_place(map, resolution, origin, paparazzi, robot, display=True, range = 300):
     t0 = time()
     possible_hiding_points_raw = mark_visible_cells(map.copy(), paparazzi, range)
     print('Exec time: %f'%(time()-t0))
