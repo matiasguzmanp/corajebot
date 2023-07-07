@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 import rospy
 import smach
 import smach_ros
 from nav_msgs.msg import OccupancyGrid
-from corajebot_scripts.src.findhidingplace import find_hiding_place
+from corajebot_famous.findhidingplace import *
 
 class LoadMapState(smach.State):
     def __init__(self, outcomes=['succeeded', 'failed'], output_keys=['map'], timeout=2.0):
@@ -25,7 +27,7 @@ class LoadMapState(smach.State):
 
 class WaitForPaparazzi(smach.State):
     def __init__(self, outcomes=['succeeded', 'failed', 'preempted'], output_keys=['papa_position'], timeout=1000):
-        smach.State.__init__(outcomes, output_keys)
+        smach.State.__init__(self, outcomes, output_keys)
         self.time = rospy.Time.now().to_sec()
         self.timeout = timeout
 
@@ -45,7 +47,7 @@ class WaitForPaparazzi(smach.State):
 
 class CalculateSafePosition(smach.State):
     def __init__(self, outcomes=['succeeded', 'failed'], input_keys=['papa_position', 'map'], output_keys=['safe_pose']):
-        smach.State.__init__(outcomes, input_keys, output_keys)
+        smach.State.__init__(self, outcomes, input_keys, output_keys)
     
     def execute(self, ud):
         try:
