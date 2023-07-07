@@ -62,6 +62,7 @@ def is_clear_line_of_sight(grid, start, end):
 
 class FindPlaceToHide:
     
+<<<<<<< HEAD
     def __init__(self, map, origin, resolution):
         self.original_map = map
         self.origin = origin
@@ -116,6 +117,12 @@ class FindPlaceToHide:
 
         self.fit = fit
         return fit
+=======
+def find_hiding_place(map, resolution, origin, paparazzi, robot, display=True, range = 300):
+    t0 = time()
+    possible_hiding_points_raw = mark_visible_cells(map.copy(), paparazzi, range)
+    print('Exec time: %f'%(time()-t0))
+>>>>>>> fec5d6f1054777b0a89cf69d7c9daad0aca89e70
 
     def point_to_original_size(self, xy_hidingplace):
         original_i = xy_hidingplace[0]/(self.scale_percent*0.01)

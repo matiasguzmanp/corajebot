@@ -11,7 +11,7 @@ from corajebot_states.nav_states import GoToPoseState, Recover
 
 def getInstance():
     input_keys = []
-    sm = smach.StateMachine(outcomes=['succeeded','aborted','preempted', 'timeout'], input_keys=input_keys)
+    sm = smach.StateMachine(outcomes=['succeeded', 'failed', 'prempted', 'timeout'], input_keys=input_keys)
 
     with sm:
         smach.StateMachine.add('INIT', LoadMapState(timeout=2.0),
@@ -22,28 +22,30 @@ def getInstance():
 
         smach.StateMachine.add('WAIT4PAPARAZZI', WaitForPaparazzi(timeout=1000),
             transitions={
-                'succeded' : 'GETFREEPOSITION',
-                'failed'   : 'timeout'
+                'succeeded' : 'GETFREEPOSITION',
+                'failed'    : 'timeout'
             })
         
         smach.StateMachine.add('GETFREEPOSITION', CalculateSafePosition(),
             transitions={
-                'succeded' : 'GOTOPOSE',
-                'failed'   : 'failed'
+                'succeeded' : 'GOTOPOSE',
+                'failed'    : 'failed'
             })
         
         smach.StateMachine.add('GOTOPOSE', GoToPoseState(),
             transitions={
-                'succeded' : 'WAIT4PAPARAZZI',
-                'failed'   : 'RECOVERY'
+                'succeeded' : 'WAIT4PAPARAZZI',
+                'failed'    : 'RECOVERY'
             })
         
         smach.StateMachine.add('RECOVERY', Recover(),
             transitions={
-                'succeded'  : 'GOTOPOSE',
-                'preempted' : 'RECOVERY',
-                'failed'    : 'failed'
+                'succeeded'  : 'GOTOPOSE',
+                'prempted'   : 'RECOVERY',
+                'failed'     : 'failed'
             })
+        
+
 
     return sm
 

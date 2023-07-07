@@ -8,12 +8,12 @@ from corajebot_famous.findhidingplace import *
 
 class LoadMapState(smach.State):
     def __init__(self, outcomes=['succeeded', 'failed'], output_keys=['map'], timeout=2.0):
-        smach.State.__init__(outcomes, output_keys)
+        smach.State.__init__(self, outcomes, output_keys=output_keys)
         self.timeout = timeout
 
     def execute(self, ud):
         try:
-            map_msg = rospy.wait_for_message("/map", timeout=self.timeout)
+            map_msg = rospy.wait_for_message("/map", OccupancyGrid, timeout=self.timeout)
             ud.map = map_msg
             # aqui ver bien como inicializar la wea y donde dejar el mapa en vola es mejor incializar clase
             # o no se jsjjsa
@@ -26,7 +26,7 @@ class LoadMapState(smach.State):
 
 
 class WaitForPaparazzi(smach.State):
-    def __init__(self, outcomes=['succeeded', 'failed', 'preempted'], output_keys=['papa_position'], timeout=1000):
+    def __init__(self, outcomes=['succeeded', 'failed', 'prempted'], output_keys=['papa_position'], timeout=1000):
         smach.State.__init__(self, outcomes, output_keys)
         self.time = rospy.Time.now().to_sec()
         self.timeout = timeout
