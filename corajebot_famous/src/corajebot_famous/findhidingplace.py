@@ -17,6 +17,11 @@ import math
 import yaml
 from scipy.signal import convolve2d
 
+def manhattan_distance(point1, point2):
+    x1, y1 = point1
+    x2, y2 = point2
+    return abs(x1 - x2) + abs(y1 - y2)
+
 def mark_visible_cells(grid, pos_observer, visibility_range, mark_value=1):
     y_obs, x_obs = pos_observer
 
@@ -54,91 +59,111 @@ def is_clear_line_of_sight(grid, start, end):
 
     return True
 
-def whereCanRobotFit(map, robot):
-  filtered_img = convolve2d(map, robot, mode='same', boundary='fill', fillvalue=0)
-  normalized_array = cv.normalize(filtered_img, None, 0, 255, cv.NORM_MINMAX)
-  _, fit = cv.threshold(normalized_array, 250, 255, cv.THRESH_BINARY)
-  
-  return fit
 
-def manhattan_distance(point1, point2):
-    x1, y1 = point1
-    x2, y2 = point2
-    return abs(x1 - x2) + abs(y1 - y2)
-
-def calculateDistances(map, point):
-  x,y = point
-  L = np.zeros(map.shape)
-  for i in range(map.shape[0]):
-    for j in range(map.shape[1]):
-      if map[i,j] == 255:
-        dist = manhattan_distance((x,y),(i,j))
-        L[i,j] = 1/dist
-  return L
-
-def process_map(map, scale_percent = 50, display = 0):
-    # resize map
-    width = int(map.shape[1] * scale_percent / 100)
-    height = int(map.shape[0] * scale_percent / 100)
-    dim = (width, height)
-
-    resized = cv.resize(map, dim, interpolation = cv.INTER_AREA)
-
-    # cut map
-    min_x, max_x, min_y, max_y = [80, 270, 60, 200]
-    #min_x, max_x, min_y, max_y = [150, 550, 100, 400]
-    cut_map = resized[min_x : max_x, min_y : max_y]
-
-    _, occupancy_data = cv.threshold(cut_map, 250, 255,cv.THRESH_BINARY)
-    kernel = np.ones((3,3), np.uint8)
-    occupancy_data = cv.erode(occupancy_data, kernel)
-    if display:
-        plt.imshow(occupancy_data, cmap='gray')
-    return occupancy_data
-
-def createRobotFootprint(resolution=0.02):
-    # digamos que el robot se puede aproximar por un circulo con r=50 cm
-    real_dim = 0.5
-    robot_pix = int(real_dim/resolution)
-    robot_footprint = np.zeros((robot_pix + 2, robot_pix + 2))
-    center = (int(robot_footprint.shape[0]/2), int(robot_footprint.shape[1]/2))
-    robot_footprint= cv.circle(robot_footprint, center, int(robot_footprint.shape[0]/2), 255, -1)
-    return robot_footprint
-
-
-def point_to_original_size(xy_hidingplace):
-    original_i = xy_hidingplace[0]*2
-    original_j = xy_hidingplace[1]*2
-
-    return original_i, original_j
-
-def map_to_orig (map, orig_size, scale_percent = 200):
-    width = int(orig_size[1] * scale_percent / 100)
-    height = int(orig_size[0] * scale_percent / 100)
-    dim = (width, height)
-
-    # resize image
-    final = cv.resize(map, dim, interpolation = cv.INTER_AREA)
-
-    return final
+class FindPlaceToHide:
     
-def find_hiding_place(map, resolution, origin, paparazzi:tuple, robot:tuple, display=True, range = 300):
-    t0 = time()
-    possible_hiding_points_raw = mark_visible_cells(map.copy(), paparazzi, range)
-    print('Exec time: %f'%(time()-t0))
+    def __init__(self, map, origin, resolution):
+        self.original_map = map
+        self.origin = origin
+        self.resolution = resolution
 
-    kernel = np.ones((3, 3), np.uint8)
-    possible_hiding_points = cv.erode(possible_hiding_points_raw, kernel)
-    robot_footprint = createRobotFootprint(resolution)
-    valid_points_map = whereCanRobotFit(possible_hiding_points, robot_footprint)
-    distances_from_point = calculateDistances(valid_points_map, robot) #calculate distances from robot, so we find the closest one
-    max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
+        # debug
+        self.L = None
+        self.fit = None
+        self.max_indices = None
+        self.posible_hiding_points = None
+        self.paparazzi_scaled = None
+        self.robot_scaled = None
+        self.valid_points_map = None
 
-    if display:
-        plt.imshow(map, cmap='gray')
-        plt.scatter(paparazzi[0], paparazzi[1])
+        # Process map
+        self.scale_percent = 50
+        [self.min_x, self.max_x, self.min_y, self.max_y] = [80, 270, 60, 200]
+        self.scaled_map = self.process_map()
 
-    return max_indices
+        # Robot footprint in map
+        self.robot_footprint = self.createRobotFootprint()
+        
+    def process_map(self):
+        #Resize and Cut map for performance reasons
+        width = int(self.original_map.shape[1] * self.scale_percent / 100)
+        height = int(self.original_map.shape[0] * self.scale_percent / 100)
+        dim = (width, height)
+
+        resized = cv.resize(self.original_map, dim, interpolation = cv.INTER_AREA)
+        #cut_map = resized[self.min_x : self.max_x, self.min_y : self.max_y]
+
+        _, occupancy_data = cv.threshold(resized, 250, 255,cv.THRESH_BINARY)
+        kernel = np.ones((3,3), np.uint8)
+        occupancy_data = cv.erode(occupancy_data, kernel)
+
+        return occupancy_data
+
+
+    def createRobotFootprint(self, real_dim=0.5):
+        # digamos que el robot se puede aproximar por un circulo con r=50 cm
+        robot_pix = int(real_dim/self.resolution)
+        robot_footprint = np.zeros((robot_pix + 2, robot_pix + 2))
+        center = (int(robot_footprint.shape[0]/2), int(robot_footprint.shape[1]/2))
+        robot_footprint= cv.circle(robot_footprint, center, int(robot_footprint.shape[0]/2), 255, -1)
+
+        return robot_footprint
+    
+    def WhereCanTheRobotBe(self, posible_hiding_points):
+        filtered_img = convolve2d(posible_hiding_points, self.robot_footprint, mode='same', boundary='fill', fillvalue=0)
+        normalized_array = cv.normalize(filtered_img, None, 0, 255, cv.NORM_MINMAX)
+        _, fit = cv.threshold(normalized_array, 250, 255, cv.THRESH_BINARY)
+
+        self.fit = fit
+        return fit
+
+    def point_to_original_size(self, xy_hidingplace):
+        original_i = xy_hidingplace[0]/(self.scale_percent*0.01)
+        original_j = xy_hidingplace[1]/(self.scale_percent*0.01)
+
+        return original_i, original_j
+    
+    def calculateDistances(self, valid_points_map, point):
+        x,y = point
+        L = np.zeros(self.valid_points_map.shape)
+        for i in range(self.valid_points_map.shape[0]):
+            for j in range(self.valid_points_map.shape[1]):
+                if self.valid_points_map[i,j] == 255:
+                    dist = manhattan_distance((x,y),(i,j))
+                    L[i,j] = 1/dist
+        return L
+
+    def process_points(self, paparazzi, robot):
+        scale = (((self.scale_percent)*0.01))
+        paparazzi = paparazzi[0]*scale, paparazzi[1]*scale
+        robot = robot[0]*scale, robot[1]*scale
+        self.paparazzi_scaled = paparazzi
+        self.robot_scaled = robot
+        return paparazzi, robot
+
+    def find_hiding_place(self, paparazzi, robot, display=False, range = 300):
+        paparazzi, robot = self.process_points(paparazzi, robot)
+        t0 = time()
+        posible_hiding_points_raw = mark_visible_cells(self.scaled_map, paparazzi, range)
+        print('Exec time: %f'%(time()-t0))
+        posible_hiding_points = cv.erode(posible_hiding_points_raw, kernel=np.ones((3, 3), np.uint8))
+        self.posible_hiding_points = posible_hiding_points_raw
+
+        valid_points_map = self.WhereCanTheRobotBe(posible_hiding_points)
+        self.valid_points_map = valid_points_map
+        distances_from_point = self.calculateDistances(valid_points_map, robot) #calculate distances from robot, so we can find the closest one
+        self.L = distances_from_point
+        max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
+        self.max_indices = max_indices
+        if display:
+            plt.imshow(map, cmap='gray')
+            plt.scatter(paparazzi[0], paparazzi[1])
+
+        px, py = self.point_to_original_size(max_indices)
+        x,y = self.origin[0] + px*self.resolution, self.origin[1] + py*self.resolution
+
+        return (py,px),(y,x)
+
 
 if __name__=="__main__":
-   print("This is a library! Try to import functions")
+    pass
