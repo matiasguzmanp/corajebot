@@ -5,9 +5,10 @@ import smach
 import smach_ros
 from nav_msgs.msg import OccupancyGrid
 from corajebot_famous.findhidingplace import *
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, TransformStamped
 from apriltag_ros.msg import AprilTagDetectionArray
-from base import MoveBase
+from corajebot_states.base import MoveBase
+import tf2_ros
 
 class LoadMapAndSensorsState(smach.State):
     def __init__(self, outcomes=['succeeded', 'failed'], 
@@ -43,7 +44,8 @@ class WaitForPaparazzi(smach.State):
         self.time = rospy.Time.now().to_sec()
         self.timeout = timeout
 
-        self._tag_pose = self
+        self._tag_pose = None
+        self._tag_detections = None
         self.tag_detection_topic = '/tag_detections'
         self.tag_sub = rospy.Subscriber(self.tag_detection_topic, AprilTagDetectionArray, self.getTagPose)
 
@@ -51,13 +53,13 @@ class WaitForPaparazzi(smach.State):
 
     def execute(self, ud):
         while not rospy.is_shutdown():
-
-            if self._tag_pose != []:
+            if len(self._tag_detections) > 0:
                 ud.papa_position = self._tag_pose
                 return 'succeeded'
             
             else:
-                self.base.rotate(5)
+                print(self.base._robot_pose.theta)
+                self.base.rotate(self.base._robot_pose.theta + 5)
                 #self.base.rotate(360)
             rospy.sleep(1) # 1 [s]
 
@@ -66,11 +68,25 @@ class WaitForPaparazzi(smach.State):
             self.time = rospy.Time.now().to_sec()
 
     def getTagPose(self, msg) :
+        self._tag_detections = msg.detections
         try:
-            self._tag_pose = msg[0].PoseWithCovarianceStamped
-            self._tag_pose.x = msg.pose.pose.position.x
-            self._tag_pose.y = msg.pose.pose.position.y
-            self._tag_pose.theta = self._yaw_from_quat(msg.pose.pose.orientation)
+            self._tag_pose = self._tag_detections[0].pose.pose.pose
+            
+            tf_buffer = tf2_ros.Buffer()
+            transform = tf_buffer.lookup_transform("map", "camera_link", rospy.Time(0), rospy.Duration(1.0))
+            # Create a TransformStamped message with the camera_xyz as the translation
+            transform_stamped = TransformStamped()
+            transform_stamped.transform.translation.x = self._tag_pose.position.x
+            transform_stamped.transform.translation.y = self._tag_pose.position.y
+            transform_stamped.transform.translation.z = self._tag_pose.position.z
+            
+            # Set the transform frame IDs
+            transform_stamped.header.frame_id = "camera_link"
+            transform_stamped.child_frame_id = "map"
+            map_xyz = tf2_ros.do_transform_pose(transform_stamped, msg.pose.pose)
+            print(map_xyz)
+            
+            #self._tag_pose = map_xyz
         except:
             pass
 
