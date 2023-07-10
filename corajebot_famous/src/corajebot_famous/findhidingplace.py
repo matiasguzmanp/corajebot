@@ -16,6 +16,8 @@ from time import time
 import math
 import yaml
 from scipy.signal import convolve2d
+import rospy
+from nav_msgs.msg import OccupancyGrid
 
 def manhattan_distance(point1, point2):
     x1, y1 = point1
@@ -63,35 +65,41 @@ def is_clear_line_of_sight(grid, start, end):
 class FindPlaceToHide:
     
     def __init__(self):
+        # map data
         self.original_map = None
+        self.scaled_map = None
         self.origin = None
         self.resolution = None
-
+        self.scale_percent = 50
+    
         # debug
-        self.L = None
+        self.distances_from_point = None
         self.fit = None
         self.max_indices = None
         self.posible_hiding_points = None
-        self.paparazzi_scaled = None
-        self.robot_scaled = None
-        self.valid_points_map = None
+        self.paparazzi_in_pixels = None
+        self.robot_in_pixels = None
+        self.valid_hiding_points = None
 
-        # Process map
-        self.scale_percent = 50
-        self.scaled_map = None
 
-        # Robot footprint in map
-        self.robot_footprint = self.createRobotFootprint()
 
-    def load_map(self, map, origin, resolution):
-        self.original_map = map
+    def load_map(self, data, width, height, origin, resolution):
         self.origin = origin
         self.resolution = resolution
+        self.original_map = self.create_map(data, width, height)
         self.scaled_map = self.process_map()
+        self.robot_footprint = self.createRobotFootprint()
 
+    def create_map(self, data, width, height):
+        occupancy_grid = np.array(data).reshape((height, width))
+        map = np.zeros((height, width), dtype=np.uint8)
+        map[occupancy_grid == 0] = 255  # Celdas libres en blanco
+        map[occupancy_grid == 100] = 0  # Celdas ocupadas en negro
+        map[occupancy_grid == -1] = 0
+        return map
 
     def process_map(self):
-        #Resize and Cut map for performance reasons
+        #Resize and cut map for performance reasons
         width = int(self.original_map.shape[1] * self.scale_percent / 100)
         height = int(self.original_map.shape[0] * self.scale_percent / 100)
         dim = (width, height)
@@ -107,19 +115,17 @@ class FindPlaceToHide:
 
     def createRobotFootprint(self, real_dim=0.5):
         # digamos que el robot se puede aproximar por un circulo con r=50 cm
-        robot_pix = int(real_dim/self.resolution)
+        robot_pix = int(real_dim*self.resolution)
         robot_footprint = np.zeros((robot_pix + 2, robot_pix + 2))
         center = (int(robot_footprint.shape[0]/2), int(robot_footprint.shape[1]/2))
         robot_footprint= cv.circle(robot_footprint, center, int(robot_footprint.shape[0]/2), 255, -1)
 
         return robot_footprint
     
-    def WhereCanTheRobotBe(self, posible_hiding_points):
+    def whereCanTheRobotBe(self, posible_hiding_points):
         filtered_img = convolve2d(posible_hiding_points, self.robot_footprint, mode='same', boundary='fill', fillvalue=0)
         normalized_array = cv.normalize(filtered_img, None, 0, 255, cv.NORM_MINMAX)
         _, fit = cv.threshold(normalized_array, 250, 255, cv.THRESH_BINARY)
-
-        self.fit = fit
         return fit
 
 
@@ -129,12 +135,12 @@ class FindPlaceToHide:
 
         return original_i, original_j
     
-    def calculateDistances(self, valid_points_map, point):
-        x,y = point
-        L = np.zeros(self.valid_points_map.shape)
-        for i in range(self.valid_points_map.shape[0]):
-            for j in range(self.valid_points_map.shape[1]):
-                if self.valid_points_map[i,j] == 255:
+    def calculateDistances(self, valid_hiding_points, point):
+        y,x = point
+        L = np.zeros(self.valid_hiding_points.shape)
+        for i in range(self.valid_hiding_points.shape[0]):
+            for j in range(self.valid_hiding_points.shape[1]):
+                if self.valid_hiding_points[i,j] == 255:
                     dist = manhattan_distance((x,y),(i,j))
                     L[i,j] = 1/dist
         return L
@@ -143,34 +149,59 @@ class FindPlaceToHide:
         scale = (((self.scale_percent)*0.01))
         paparazzi = paparazzi[0]*scale, paparazzi[1]*scale
         robot = robot[0]*scale, robot[1]*scale
-        self.paparazzi_scaled = paparazzi
-        self.robot_scaled = robot
         return paparazzi, robot
 
-    def find_hiding_place(self, paparazzi_orig, robot_orig, display=False, range = 300):
-        paparazzi, robot = self.process_points(paparazzi_orig, robot_orig)
+    def find_hiding_place(self, paparazzi_xyz, robot_xyz, display=False, range = 300):
+        paparazzi_pixels = int((paparazzi_xyz[0] - self.origin[0]) / self.resolution), int((paparazzi_xyz[1] - self.origin[1]) / self.resolution)
+        robot_pixels = int((robot_xyz[0] - self.origin[0]) / self.resolution), int((robot_xyz[1] - self.origin[1]) / self.resolution)
+        self.paparazzi_in_pixels = paparazzi_pixels
+        self.robot_in_pixels = robot_pixels
+        
+        paparazzi, robot = self.process_points(paparazzi_pixels, robot_pixels)
+
         t0 = time()
         posible_hiding_points_raw = mark_visible_cells(self.scaled_map, paparazzi, range)
         print('Exec time: %f'%(time()-t0))
+
         posible_hiding_points = cv.erode(posible_hiding_points_raw, kernel=np.ones((3, 3), np.uint8))
         self.posible_hiding_points = posible_hiding_points_raw
 
-        valid_points_map = self.WhereCanTheRobotBe(posible_hiding_points)
-        self.valid_points_map = valid_points_map
-        distances_from_point = self.calculateDistances(valid_points_map, robot) #calculate distances from robot, so we can find the closest one
-        self.L = distances_from_point
+        valid_hiding_points = self.whereCanTheRobotBe(posible_hiding_points)
+        self.valid_hiding_points = valid_hiding_points
+
+        distances_from_point = self.calculateDistances(valid_hiding_points, robot) #calculate distances from robot, so we can find the closest one
+        self.distances_from_point = distances_from_point
         max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
         self.max_indices = max_indices
 
         px, py = self.point_to_original_size(max_indices)
         x,y = self.origin[0] + px*self.resolution, self.origin[1] + py*self.resolution
 
-        if display:
-            plt.imshow(self.original_map, cmap='gray')
-            plt.scatter(paparazzi_orig[0], paparazzi_orig[1])
-
         return (py,px),(y,x)
 
 
 if __name__=="__main__":
-    pass
+    rospy.init_node("XD")
+    finder = FindPlaceToHide()
+    msg = rospy.wait_for_message("/map", OccupancyGrid)
+    data = msg.data
+    origin = [msg.info.origin.position.x, msg.info.origin.position.y, msg.info.origin.position.z]
+    resolution = msg.info.resolution
+    width = msg.info.width
+    height = msg.info.height
+    finder.load_map(data,width,height,origin,resolution)
+    paparazzi = (0.64, 5.0)
+    robot = (0.64, 3.22)
+    pixels, points = finder.find_hiding_place(paparazzi_xyz = paparazzi, robot_xyz=robot)
+    
+    #
+    # plt.imshow(finder.original_map, cmap='gray')
+    #plt.scatter(finder.max_indices[1], finder.max_indices[0])
+    #plt.scatter(finder.paparazzi_in_pixels[0], finder.paparazzi_in_pixels[1])
+    #plt.scatter(finder.robot_in_pixels[0], finder.robot_in_pixels[1], marker='x')
+    #plt.scatter(pixels[0],pixels[1])
+
+    #plt.imshow(finder.valid_points_map, cmap='gray')
+    #plt.scatter(paparazzi[0], paparazzi[1])
+    #plt.scatter(robot[0], robot[1])
+    #plt.show()

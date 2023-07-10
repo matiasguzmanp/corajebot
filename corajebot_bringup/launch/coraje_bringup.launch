@@ -6,6 +6,9 @@
 	<arg name="headless"     default="false" />
 	<arg name="debug"        default="false" />
     <arg name="worldname"    default="lab"/>
+	
+	<arg name="camera_name"		default="/usb_cam" />
+	<arg name="image_topic"     default="image_raw" />
 
     <include file="$(find p3dx_gazebo)/launch/gazebo.launch" >
 		<arg name="debug"        value="$(arg debug)" />
@@ -26,5 +29,10 @@
 		<param name="openni_rgb_optical_frame" value="kinect_rgb_optical_frame" />
 		<param name="image_input_format" value="5" />
   	</node>
+
+	<include file="$(find corajebot_bringup)/launch/apriltag_detection.launch" >
+		<arg name="camera_name"		value="$(arg camera_name)" />
+		<arg name="image_topic"		value="$(arg image_topic)" />
+	</include>
 
 </launch>
