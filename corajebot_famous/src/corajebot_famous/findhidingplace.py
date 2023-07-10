@@ -62,10 +62,10 @@ def is_clear_line_of_sight(grid, start, end):
 
 class FindPlaceToHide:
     
-    def __init__(self, map, origin, resolution):
-        self.original_map = map
-        self.origin = origin
-        self.resolution = resolution
+    def __init__(self):
+        self.original_map = None
+        self.origin = None
+        self.resolution = None
 
         # debug
         self.L = None
@@ -78,12 +78,18 @@ class FindPlaceToHide:
 
         # Process map
         self.scale_percent = 50
-        [self.min_x, self.max_x, self.min_y, self.max_y] = [80, 270, 60, 200]
-        self.scaled_map = self.process_map()
+        self.scaled_map = None
 
         # Robot footprint in map
         self.robot_footprint = self.createRobotFootprint()
-        
+
+    def load_map(self, map, origin, resolution):
+        self.original_map = map
+        self.origin = origin
+        self.resolution = resolution
+        self.scaled_map = self.process_map()
+
+
     def process_map(self):
         #Resize and Cut map for performance reasons
         width = int(self.original_map.shape[1] * self.scale_percent / 100)
@@ -91,7 +97,6 @@ class FindPlaceToHide:
         dim = (width, height)
 
         resized = cv.resize(self.original_map, dim, interpolation = cv.INTER_AREA)
-        #cut_map = resized[self.min_x : self.max_x, self.min_y : self.max_y]
 
         _, occupancy_data = cv.threshold(resized, 250, 255,cv.THRESH_BINARY)
         kernel = np.ones((3,3), np.uint8)
