@@ -4,17 +4,19 @@ import rospy
 import smach
 import smach_ros
  
-from famous_states import LoadMapState, CalculateSafePosition, WaitForPaparazzi
+from famous_states import LoadMapAndSensorsState, CalculateSafePosition, WaitForPaparazzi
 from corajebot_states.nav_states import GoToPoseState, Recover
-
+from corajebot_famous.findhidingplace import FindPlaceToHide
 
 
 def getInstance():
+    calculator = FindPlaceToHide
     input_keys = []
+
     sm = smach.StateMachine(outcomes=['succeeded', 'failed', 'prempted', 'timeout'], input_keys=input_keys)
 
     with sm:
-        smach.StateMachine.add('INIT', LoadMapState(timeout=2.0),
+        smach.StateMachine.add('INIT', LoadMapAndSensorsState(timeout=2.0, goal_calculator=calculator),
             transitions = {
                 'succeeded' : 'WAIT4PAPARAZZI',
                 'failed'    : 'timeout' 
@@ -26,7 +28,7 @@ def getInstance():
                 'failed'    : 'timeout'
             })
         
-        smach.StateMachine.add('GETFREEPOSITION', CalculateSafePosition(),
+        smach.StateMachine.add('GETFREEPOSITION', CalculateSafePosition(goal_calculator=calculator),
             transitions={
                 'succeeded' : 'GOTOPOSE',
                 'failed'    : 'failed'
@@ -36,7 +38,8 @@ def getInstance():
             transitions={
                 'succeeded' : 'WAIT4PAPARAZZI',
                 'failed'    : 'RECOVERY'
-            })
+            },
+            remapping={'pose' : 'safe_pose'})
         
         smach.StateMachine.add('RECOVERY', Recover(),
             transitions={
@@ -45,13 +48,10 @@ def getInstance():
                 'failed'     : 'failed'
             })
         
-
-
     return sm
 
 
 if __name__ == "__main__":
     rospy.init_node('famous_node')
-    print('aaaaaaaaaaaaaaaaaa')
     sm = getInstance()
     outcome = sm.execute()
