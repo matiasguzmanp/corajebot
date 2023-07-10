@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+    <include file="$(find rosaria_client)/launch/rosaria_client_launcher.launch" />
+    <include file="$(find p3dx_description)/launch/rviz.launch" />
+    
+    <node name="urg_node" pkg="urg_node" type="urg_node" output="screen">
+        <remap from="scan" to="/p3dx/laser/scan"/>
+    </node>
+
+    <include file="$(find corajebot_slam)/launch/navigation/navigation.launch">
+        <arg name="map_name" value="stage_real"/>
+    </include>
+
+</launch>
