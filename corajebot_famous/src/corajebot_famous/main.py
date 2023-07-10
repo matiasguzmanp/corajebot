@@ -10,7 +10,7 @@ from corajebot_famous.findhidingplace import FindPlaceToHide
 
 
 def getInstance():
-    calculator = FindPlaceToHide
+    calculator = FindPlaceToHide()
     input_keys = []
 
     sm = smach.StateMachine(outcomes=['succeeded', 'failed', 'prempted', 'timeout'], input_keys=input_keys)

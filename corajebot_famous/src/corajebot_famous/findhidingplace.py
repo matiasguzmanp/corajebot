@@ -113,7 +113,7 @@ class FindPlaceToHide:
         return occupancy_data
 
 
-    def createRobotFootprint(self, real_dim=0.5):
+    def createRobotFootprint(self, real_dim=0.6):
         # digamos que el robot se puede aproximar por un circulo con r=50 cm
         robot_pix = int(real_dim*self.resolution)
         robot_footprint = np.zeros((robot_pix + 2, robot_pix + 2))
