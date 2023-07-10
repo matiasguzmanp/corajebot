@@ -7,6 +7,7 @@ from nav_msgs.msg import OccupancyGrid
 from corajebot_famous.findhidingplace import *
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from apriltag_ros.msg import AprilTagDetectionArray
+from base import MoveBase
 
 class LoadMapAndSensorsState(smach.State):
     def __init__(self, outcomes=['succeeded', 'failed'], 
@@ -44,34 +45,29 @@ class WaitForPaparazzi(smach.State):
 
         self._tag_pose = self
         self.tag_detection_topic = '/tag_detections'
-        self.tag_sub= rospy.Subscriber(self.tag_detection_topic, AprilTagDetectionArray, self.getTagPose)
+        self.tag_sub = rospy.Subscriber(self.tag_detection_topic, AprilTagDetectionArray, self.getTagPose)
+
+        self.base = MoveBase()
 
     def execute(self, ud):
         while not rospy.is_shutdown():
-            
-             
-            # try detecting april tag
 
+            if self._tag_pose != []:
+                ud.papa_position = self._tag_pose
+                return 'succeeded'
             
-            #if detection != bien:
-            #   ud.papa_position = detected_position
-            #   return 'succeded'
-            # else:
-            #   x, y, theta = ud.pose
-            #   theta += 5
-            #   self.goto.execute(x, y, theta)
-            # rotar la base x graados o dar una vuelta completa lenta
+            else:
+                self.base.rotate(5)
+                #self.base.rotate(360)
             rospy.sleep(1) # 1 [s]
-            ud.papa_position = [1, 3, 0]
-            return 'succeeded'
 
             if rospy.Time.now().to_sec() - self.time > self.timeout:
                 return 'failed'
             self.time = rospy.Time.now().to_sec()
 
     def getTagPose(self, msg) :
-        self._tag_pose = msg[0].PoseWithCovarianceStamped
         try:
+            self._tag_pose = msg[0].PoseWithCovarianceStamped
             self._tag_pose.x = msg.pose.pose.position.x
             self._tag_pose.y = msg.pose.pose.position.y
             self._tag_pose.theta = self._yaw_from_quat(msg.pose.pose.orientation)
