@@ -9,7 +9,12 @@
     </node>
 
     <include file="$(find corajebot_slam)/launch/navigation/navigation.launch">
-        <arg name="map_name" value="stage_real"/>
+        <arg name="map_name"      value="stage_real"/>
+        <arg name="odom_topic"    value="/RosAria/odom"/>
+        <arg name="cmd_vel_topic" value="/RosAria/cmd_vel"/>
     </include>
 
+    <node name="usb_cam_node" pkg="usb_cam" type="usb_cam_node" output="screen" />
+    <include file="$(find corajebot_bringup)/launch/apriltag_detection.launch"  />
+    
 </launch>
