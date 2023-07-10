@@ -7,7 +7,7 @@
 	<arg name="debug"        default="false" />
     <arg name="worldname"    default="lab"/>
 
-	<arg name="camera_name"		default="/usb_cam" />
+	<arg name="camera_name"		default="/camera/color" />
 	<arg name="image_topic"     default="image_raw" />
 	<arg name="camera_frame"	default="camera_link" />
 
