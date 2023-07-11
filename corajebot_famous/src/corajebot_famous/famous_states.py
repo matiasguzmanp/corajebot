@@ -32,7 +32,7 @@ class LoadMapAndSensorsState(smach.State):
                 resolution = map_msg.info.resolution
                 width = map_msg.info.width
                 height = map_msg.info.height
-                self._goal_calculator.load_map(data,width,height,origin,resolution)
+                self._goal_calculator.load_map(data, width, height, origin, resolution, is_lab=True)
                 rospy.loginfo("Map loaded succesfully")
             else:
                 rospy.logerr('No goal calculator received')
@@ -59,7 +59,7 @@ class WaitForPaparazzi(smach.State):
     def execute(self, ud):
         init_theta = self.base._robot_pose.theta
         while not rospy.is_shutdown():
-            init_theta += 10
+            init_theta += 15
             if len(self._tag_detections) > 0:
                 ud.papa_position = self._tag_pose
                 return 'succeeded'
