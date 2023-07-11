@@ -14,7 +14,9 @@
         <arg name="cmd_vel_topic" value="/RosAria/cmd_vel"/>
     </include>
 
-    <node name="usb_cam_node" pkg="usb_cam" type="usb_cam_node" output="screen" />
+    <node name="usb_cam_node" pkg="usb_cam" type="usb_cam_node" output="screen">
+        <rosparam command="load" file="$(find corajebot_bringup)/params/usb_cam.yaml"/>
+    </node>
     <include file="$(find corajebot_bringup)/launch/apriltag_detection.launch"  />
     
 </launch>

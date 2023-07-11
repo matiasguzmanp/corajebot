@@ -3,7 +3,7 @@
 <launch>
     <arg name="launch_prefix" 	default=""/>
 	<arg name="node_namespace" 	default="apriltag_ros_continuous_node" />
-	<arg name="camera_name"		default="/usb_cam" />
+	<arg name="camera_name"		default="/usb_cam_node" />
 	<arg name="image_topic"     default="image_raw" />
 	<arg name="camera_frame"	default="camera_link" />
 

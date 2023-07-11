@@ -14,7 +14,7 @@
     <!-- move_base -->
     <include file="$(find corajebot_slam)/launch/navigation/move_base.launch">
         <arg name="move_forward_only" value="$(arg move_forward_only)"/>
-        <remap from="cmd_vel"         to="$(arg cmd_vel_topic)"/>
-        <remap from="odom"            to="$(arg odom_topic)"/>  
+        <arg name="odom_topic"        value="$(arg odom_topic)"/>
+        <arg name="cmd_vel_topic"     value="$(arg cmd_vel_topic)"/>
     </include>
 </launch>
