@@ -71,6 +71,7 @@ class FindPlaceToHide:
         self.origin = None
         self.resolution = None
         self.scale_percent = 50
+        self.is_lab = None
     
         # debug
         self.distances_from_point = None
@@ -83,7 +84,8 @@ class FindPlaceToHide:
 
 
 
-    def load_map(self, data, width, height, origin, resolution):
+    def load_map(self, data, width, height, origin, resolution, is_lab = False):
+        self.is_lab = is_lab
         self.origin = origin
         self.resolution = resolution
         self.original_map = self.create_map(data, width, height)
@@ -96,6 +98,8 @@ class FindPlaceToHide:
         map[occupancy_grid == 0] = 255  # Celdas libres en blanco
         map[occupancy_grid == 100] = 0  # Celdas ocupadas en negro
         map[occupancy_grid == -1] = 0
+        if self.is_lab:
+            map[100:300,0:133] = 0
         return map
 
     def process_map(self):
@@ -113,7 +117,7 @@ class FindPlaceToHide:
         return occupancy_data
 
 
-    def createRobotFootprint(self, real_dim=0.6):
+    def createRobotFootprint(self, real_dim=0.8):
         # digamos que el robot se puede aproximar por un circulo con r=50 cm
         robot_pix = int(real_dim*self.resolution)
         robot_footprint = np.zeros((robot_pix + 2, robot_pix + 2))
@@ -189,13 +193,13 @@ if __name__=="__main__":
     resolution = msg.info.resolution
     width = msg.info.width
     height = msg.info.height
-    finder.load_map(data,width,height,origin,resolution)
+    finder.load_map(data,width,height,origin,resolution,is_lab=True)
     paparazzi = (0.64, 5.0)
-    robot = (0.64, 3.22)
+    robot = (0.64, 4.22)
     pixels, points = finder.find_hiding_place(paparazzi_xyz = paparazzi, robot_xyz=robot)
     
     #
-    # plt.imshow(finder.original_map, cmap='gray')
+    #plt.imshow(finder.distances_from_point, cmap='gray')
     #plt.scatter(finder.max_indices[1], finder.max_indices[0])
     #plt.scatter(finder.paparazzi_in_pixels[0], finder.paparazzi_in_pixels[1])
     #plt.scatter(finder.robot_in_pixels[0], finder.robot_in_pixels[1], marker='x')
