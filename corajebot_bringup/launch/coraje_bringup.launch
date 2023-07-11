@@ -9,7 +9,7 @@
 
 	<arg name="camera_name"		default="/camera/color" />
 	<arg name="image_topic"     default="image_raw" />
-	<arg name="camera_frame"	default="camera_link" />
+	<arg name="camera_frame"	default="camera_depth_optical_frame" />
 
     <include file="$(find p3dx_gazebo)/launch/gazebo.launch" >
 		<arg name="debug"        value="$(arg debug)" />

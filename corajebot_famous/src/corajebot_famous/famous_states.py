@@ -79,12 +79,14 @@ class WaitForPaparazzi(smach.State):
         try:
             self._tag_pose = self._tag_detections[0].pose.pose.pose
             pose = Pose()
-            pose.position.x = self._tag_pose.position.z
             pose.position.y = -self._tag_pose.position.x
-            pose.position.z = -self._tag_pose.position.y
-            
+            pose.position.x =  self._tag_pose.position.z
+            pose.position.z =  self._tag_pose.position.y
+
             transformed_pose = self.transform_pose(pose, "camera_link", "map")
+            
             self._tag_pose = transformed_pose
+            print(transformed_pose)
         except:
             pass
     def transform_pose(self, input_pose, from_frame, to_frame):
