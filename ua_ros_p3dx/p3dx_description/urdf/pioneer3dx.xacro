@@ -189,7 +189,7 @@ work original in ucs-ros-pkg.
 		</visual>
 
 		<collision>
-			<origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0" />
+			<origin xyz="0 0 0" rpy="-1.5707 0 0" />
 			<geometry>
 				<cylinder radius="0.0375" length="0.01" />
 			</geometry>
@@ -238,7 +238,7 @@ work original in ucs-ros-pkg.
 	</joint>
 	
 	<!-- lms100 laser -->
-	<link name="lms100">
+	<link name="laser">
 		<inertial>
 			<mass value="1e-5" />
 			<origin xyz="0 0 0" rpy="0 0 0" />
@@ -260,11 +260,11 @@ work original in ucs-ros-pkg.
 		</collision>
 	</link>
 
-	<joint name="lms100_joint" type="fixed">
+	<joint name="laser_joint" type="fixed">
 		<axis xyz="0 1 0" />
 		<origin xyz="0.16 0 0.15" rpy="0 0 0" />
 		<parent link="base_link" />
-		<child link="lms100" />
+		<child link="laser" />
 	</joint>
 
 	<link name="camera_link">
@@ -312,7 +312,7 @@ work original in ucs-ros-pkg.
 	</link>
 
 	<joint name="depth_optical_joint" type="fixed">
-		<origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+		<origin xyz="0 0 0" rpy="-1.5707 0 -1.5707" />
 		<parent link="camera_depth_frame" />
 		<child link="camera_depth_optical_frame" />
 	</joint>
