@@ -117,9 +117,9 @@ class FindPlaceToHide:
         return occupancy_data
 
 
-    def createRobotFootprint(self, real_dim=0.8):
+    def createRobotFootprint(self, real_dim=0.3):
         # digamos que el robot se puede aproximar por un circulo con r=50 cm
-        robot_pix = int(real_dim*self.resolution)
+        robot_pix = int(real_dim/self.resolution)
         robot_footprint = np.zeros((robot_pix + 2, robot_pix + 2))
         center = (int(robot_footprint.shape[0]/2), int(robot_footprint.shape[1]/2))
         robot_footprint= cv.circle(robot_footprint, center, int(robot_footprint.shape[0]/2), 255, -1)
@@ -178,10 +178,10 @@ class FindPlaceToHide:
         max_indices = np.unravel_index(np.argmax(distances_from_point), distances_from_point.shape)
         self.max_indices = max_indices
 
-        px, py = self.point_to_original_size(max_indices)
-        x,y = self.origin[0] + px*self.resolution, self.origin[1] + py*self.resolution
+        pj, pi = self.point_to_original_size(max_indices)
+        x,y = self.origin[0] + pi*self.resolution, self.origin[1] + pj*self.resolution
 
-        return (py,px),(y,x)
+        return (pi,pj),(x,y)
 
 
 if __name__=="__main__":

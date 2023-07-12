@@ -52,20 +52,26 @@ class WaitForPaparazzi(smach.State):
         self._tag_pose = None
         self._tag_detections = None
         self.tag_detection_topic = '/tag_detections'
-        self.tag_sub = rospy.Subscriber(self.tag_detection_topic, AprilTagDetectionArray, self.getTagPose)
-
+        # self.tag_sub = rospy.Subscriber(self.tag_detection_topic, AprilTagDetectionArray, self.getTagPose)
+        
         self.base = MoveBase()
 
     def execute(self, ud):
+        ud.papa_position = None
         init_theta = self.base._robot_pose.theta
         while not rospy.is_shutdown():
-            init_theta += 15
-            if len(self._tag_detections) > 0:
+            init_theta += 17
+            msg = rospy.wait_for_message(self.tag_detection_topic, AprilTagDetectionArray)
+            self._tag_pose = self.getTagPose(msg)
+            if self._tag_pose is not None:
+                print("TRANSFORMADA; ", self._tag_pose)
                 ud.papa_position = self._tag_pose
+                self._tag_pose = None
+                self._tag_detections = None
                 return 'succeeded'
             
             else:
-                print(self.base._robot_pose.theta)
+                # print(self.base._robot_pose.theta)
                 self.base.rotate(init_theta)
                 #self.base.rotate(360)
             rospy.sleep(1) # 1 [s]
@@ -75,20 +81,23 @@ class WaitForPaparazzi(smach.State):
             self.time = rospy.Time.now().to_sec()
 
     def getTagPose(self, msg) :
-        self._tag_detections = msg.detections
+        #self._tag_detections = msg.detections
         try:
-            self._tag_pose = self._tag_detections[0].pose.pose.pose
-            pose = Pose()
-            pose.position.y = -self._tag_pose.position.x
-            pose.position.x =  self._tag_pose.position.z
-            pose.position.z =  self._tag_pose.position.y
+            if len(msg.detections) != 0:
+                tag_pose = msg.detections[0].pose.pose.pose
+                pose = Pose()
+                pose.position.y = -tag_pose.position.x
+                pose.position.x =  tag_pose.position.z
+                pose.position.z =  tag_pose.position.y
 
-            transformed_pose = self.transform_pose(pose, "camera_link", "map")
+                # self._tag_pose = self.transform_pose(pose, "camera_link", "map")
+                return self.transform_pose(pose, "camera_link", "map")
             
-            self._tag_pose = transformed_pose
-            print(transformed_pose)
+            return None
         except:
-            pass
+            print('FALLOoooooooooooooooo')
+            return None
+
     def transform_pose(self, input_pose, from_frame, to_frame):
 
         # **Assuming /tf2 topic is being broadcasted
@@ -106,7 +115,7 @@ class WaitForPaparazzi(smach.State):
             return output_pose_stamped.pose
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            raise
+            pass
 
 
 class CalculateSafePosition(smach.State):
@@ -120,13 +129,19 @@ class CalculateSafePosition(smach.State):
 
     def execute(self, ud):
         try:
-            paparazzi = ud.papa_position.position.z, ud.papa_position.position.x
-            print("POSICION DE PAPA", ud.papa_position)
+            paparazzi = ud.papa_position.position.x, ud.papa_position.position.y
+            # print("POSICION DE PAPA", ud.papa_position)
             msg = rospy.wait_for_message("/amcl_pose", Odometry)
             robot =  msg.pose.pose.position.x, msg.pose.pose.position.y 
-            _, pos = self._goal_calculator.find_hiding_place(paparazzi, robot)
+            pxs, pos = self._goal_calculator.find_hiding_place(paparazzi, robot)
+            plt.imshow(self._goal_calculator.original_map, cmap='gray',origin='lower')
+            plt.scatter(pxs[0],pxs[1], marker="D")
+            plt.scatter(self._goal_calculator.paparazzi_in_pixels[0],self._goal_calculator.paparazzi_in_pixels[1], marker='x')
+            plt.scatter(self._goal_calculator.robot_in_pixels[0],self._goal_calculator.robot_in_pixels[1], marker='^')
+            plt.show()
+
             ud.safe_pose = [pos[0], pos[1], 0]
-            #ud.safe_pose = [1, 3, 0]
+            # ud.safe_pose = [1, 0, 0]
             return 'succeeded'
         except:
             rospy.loginfo('Could not find appropiate hidding place')
