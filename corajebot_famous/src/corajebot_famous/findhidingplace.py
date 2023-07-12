@@ -82,8 +82,6 @@ class FindPlaceToHide:
         self.robot_in_pixels = None
         self.valid_hiding_points = None
 
-
-
     def load_map(self, data, width, height, origin, resolution, is_lab = False):
         self.is_lab = is_lab
         self.origin = origin
@@ -117,7 +115,7 @@ class FindPlaceToHide:
         return occupancy_data
 
 
-    def createRobotFootprint(self, real_dim=0.3):
+    def createRobotFootprint(self, real_dim=0.4):
         # digamos que el robot se puede aproximar por un circulo con r=50 cm
         robot_pix = int(real_dim/self.resolution)
         robot_footprint = np.zeros((robot_pix + 2, robot_pix + 2))
@@ -146,7 +144,7 @@ class FindPlaceToHide:
             for j in range(self.valid_hiding_points.shape[1]):
                 if self.valid_hiding_points[i,j] == 255:
                     dist = manhattan_distance((x,y),(i,j))
-                    L[i,j] = 1/dist
+                    L[i,j] = dist
         return L
 
     def process_points(self, paparazzi, robot):

@@ -30,8 +30,8 @@ class LoadMapAndSensorsState(smach.State):
                 data = map_msg.data
                 origin = [map_msg.info.origin.position.x, map_msg.info.origin.position.y, map_msg.info.origin.position.z]
                 resolution = map_msg.info.resolution
-                width = map_msg.info.width
-                height = map_msg.info.height
+                width, height = map_msg.info.width, map_msg.info.height
+
                 self._goal_calculator.load_map(data, width, height, origin, resolution, is_lab=True)
                 rospy.loginfo("Map loaded succesfully")
             else:
@@ -52,7 +52,6 @@ class WaitForPaparazzi(smach.State):
         self._tag_pose = None
         self._tag_detections = None
         self.tag_detection_topic = '/tag_detections'
-        # self.tag_sub = rospy.Subscriber(self.tag_detection_topic, AprilTagDetectionArray, self.getTagPose)
         
         self.base = MoveBase()
 
@@ -60,28 +59,28 @@ class WaitForPaparazzi(smach.State):
         ud.papa_position = None
         init_theta = self.base._robot_pose.theta
         while not rospy.is_shutdown():
-            init_theta += 17
+            init_theta += 30
             msg = rospy.wait_for_message(self.tag_detection_topic, AprilTagDetectionArray)
-            self._tag_pose = self.getTagPose(msg)
+            self._tag_pose = self.get_tag_pose(msg)
             if self._tag_pose is not None:
-                print("TRANSFORMADA; ", self._tag_pose)
+                print("Tag position: ", self._tag_pose)
                 ud.papa_position = self._tag_pose
                 self._tag_pose = None
                 self._tag_detections = None
+
                 return 'succeeded'
             
             else:
                 # print(self.base._robot_pose.theta)
                 self.base.rotate(init_theta)
-                #self.base.rotate(360)
-            rospy.sleep(1) # 1 [s]
+
+            rospy.sleep(.5) # [s]
 
             if rospy.Time.now().to_sec() - self.time > self.timeout:
                 return 'failed'
             self.time = rospy.Time.now().to_sec()
 
-    def getTagPose(self, msg) :
-        #self._tag_detections = msg.detections
+    def get_tag_pose(self, msg) :
         try:
             if len(msg.detections) != 0:
                 tag_pose = msg.detections[0].pose.pose.pose
@@ -90,12 +89,11 @@ class WaitForPaparazzi(smach.State):
                 pose.position.x =  tag_pose.position.z
                 pose.position.z =  tag_pose.position.y
 
-                # self._tag_pose = self.transform_pose(pose, "camera_link", "map")
                 return self.transform_pose(pose, "camera_link", "map")
             
             return None
         except:
-            print('FALLOoooooooooooooooo')
+            rospy.logwarn('Could not get transformed tag pose')
             return None
 
     def transform_pose(self, input_pose, from_frame, to_frame):
@@ -135,9 +133,13 @@ class CalculateSafePosition(smach.State):
             robot =  msg.pose.pose.position.x, msg.pose.pose.position.y 
             pxs, pos = self._goal_calculator.find_hiding_place(paparazzi, robot)
             plt.imshow(self._goal_calculator.original_map, cmap='gray',origin='lower')
-            plt.scatter(pxs[0],pxs[1], marker="D")
-            plt.scatter(self._goal_calculator.paparazzi_in_pixels[0],self._goal_calculator.paparazzi_in_pixels[1], marker='x')
-            plt.scatter(self._goal_calculator.robot_in_pixels[0],self._goal_calculator.robot_in_pixels[1], marker='^')
+            plt.scatter(pxs[0],pxs[1], marker="D", label="Goal")
+            plt.scatter(self._goal_calculator.paparazzi_in_pixels[0],self._goal_calculator.paparazzi_in_pixels[1], marker='x',label="Paparazzi")
+            plt.scatter(self._goal_calculator.robot_in_pixels[0],self._goal_calculator.robot_in_pixels[1], marker='^', label="Robot")
+            plt.legend()
+            plt.show()
+
+            plt.imshow(self._goal_calculator.distances_from_point, cmap='gray',origin='lower')
             plt.show()
 
             ud.safe_pose = [pos[0], pos[1], 0]
