@@ -1,7 +1,11 @@
-# famous_project
-Proyecto
+# Coraje, el robot cobarde
+Este proyecto busca resolver el problema del "robot famoso", donde un robot debe huir de un robot paparazzi. Éste último se asume estático y se simplifica a un Apriltag para conocer su posición rápidamente.
 
-Una vez instalado, correr el siguiente comando
+# Setup
+
+Este robot funciona con ROS Noetic
+
+Una vez instalado copiado el repositorio en un *workspace*, correr el siguiente comando
 
     $ rosdep install --from-paths src --ignore-src -r -y
 
